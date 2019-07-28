@@ -34,9 +34,9 @@ samples <- list_samples$sample
 
 sce_list <- list()
 # select species
-if(unique(list_samples$species) == "Homo_sapiens") species <- "hg19"
-if(unique(list_samples$species) == "Mus_musculus") species <- "mm10"
-if(unique(list_samples$species) == "Danio_rerio") species <- "danRer10"
+if(unique(list_samples$species) %in% c("Homo_sapiens","Human")) species <- "hg19"
+if(unique(list_samples$species) %in% c("Mus_musculus","Mouse")) species <- "mm10"
+if(unique(list_samples$species) %in% c("Danio_rerio")) species <- "danRer10"
 if(species == "hg19") suppressPackageStartupMessages(library(EnsDb.Hsapiens.v86))
 if(species == "mm10") suppressPackageStartupMessages(library(EnsDb.Mmusculus.v79))
 
@@ -78,9 +78,6 @@ for(i in 1:length(samples)){
 sce_list <- lapply(sce_list, function(x) calculateQCMetrics(x,compact = FALSE,
                         feature_controls=list(Mito=which(location=="MT"))))
 
-for(i in 1:length(sce_list)){
-        logcounts(sce_list[[i]]) <- as(log1p(assay(sce_list[[i]], "counts")),"dgCMatrix")
-}
 ########################################################################
 
 # Ideally, we would remove cells with low library sizes or total number of expressed features as described previously.

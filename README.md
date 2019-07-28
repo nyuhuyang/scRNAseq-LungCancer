@@ -1,5 +1,5 @@
-# scRNAseq-LungVivek
-single cell RNA-Seq analysis of human lung cancer. Data from Vivek Mittal <vim2010@med.cornell.edu>  and postdoc Sharrell B. Lee <sbl2002@med.cornell.edu>
+# scRNAseq-LungCancer
+single cell RNA-Seq analysis of human lung cancer. Data from Vivek Mittal <vim2010@med.cornell.edu>  and Michael J. Crowley <mic2029@med.cornell.edu>
 
 ## How to run Rscript
 
