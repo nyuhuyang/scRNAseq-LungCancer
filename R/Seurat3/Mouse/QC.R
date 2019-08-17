@@ -151,5 +151,5 @@ lapply(sce_list,function(x) summary(sizeFactors(x)))
 remove(clusters_list);GC()
 #plot(sce_list[[1]]$nCount_RNA, sizeFactors(sce_list[[1]]), log="xy")
 sce_list <- lapply(sce_list, normalize)
-
+names(sce_list) = samples
 save(sce_list, file = paste0("data/","sce_",length(df_samples$sample),"_",gsub("-","",Sys.Date()),".Rda"))

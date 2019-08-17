@@ -35,7 +35,7 @@ samples = df_samples$sample
 
 
 #======1.2 load  SingleCellExperiment =========================
-(load(file = "data/sce_6_20190617.Rda"))
+(load(file = "data/sce_6_20190817.Rda"))
 names(sce_list)
 object_list <- lapply(sce_list, as.Seurat)
 (samples <- sapply(object_list,function(x) unique(x@meta.data$orig.ident)))
@@ -59,7 +59,7 @@ Idents(object) = "orig.ident"
 
 #======1.2 QC, pre-processing and normalizing the data=========================
 Idents(object) = factor(Idents(object),levels = df_samples$sample)
-(load(file = "output/20190617/g1_6_20190617.Rda"))
+(load(file = "output/20190617/g1_6_20190817.Rda"))
 
 #object %<>% subset(subset = nFeature_RNA > 100 & nCount_RNA > 200 & percent.mt < 15)
 # FilterCellsgenerate Vlnplot before and after filteration
@@ -68,7 +68,7 @@ g2 <- lapply(c("nFeature_RNA", "nCount_RNA", "percent.mt"), function(features){
         theme(axis.text.x = element_text(size=15),legend.position="none")
 })
 
-save(g2,file= paste0(path,"g2_6_20190617.Rda"))
+save(g2,file= paste0(path,"g2_6_20190817.Rda"))
 jpeg(paste0(path,"S1_nGene.jpeg"), units="in", width=10, height=7,res=600)
 print(plot_grid(g1[[1]]+ggtitle("nFeature_RNA before filteration")+
                     scale_y_log10(limits = c(100,10000)),
@@ -112,8 +112,8 @@ write.csv(hvf.info, file = paste0(path,"high_variable_genes.csv"))
 #======1.3 1st run of pca-tsne  =========================
 object %<>% ScaleData(features = VariableFeatures(object))
 object %<>% RunPCA(features = VariableFeatures(object),verbose =F,npcs = 100)
-object %<>% JackStraw(num.replicate = 20,dims = 100)
-object %<>% ScoreJackStraw(dims = 1:85)
+#object %<>% JackStraw(num.replicate = 20,dims = 100)
+#object %<>% ScoreJackStraw(dims = 1:85)
 
 jpeg(paste0(path,"ElbowPlot.jpeg"), units="in", width=10, height=7,res=600)
 ElbowPlot(object, ndims = 85)+
@@ -134,38 +134,79 @@ object %<>% FindNeighbors(reduction = "pca",dims = 1:npcs)
 object %<>% FindClusters(reduction = "pca",resolution = 0.6,
                        dims.use = 1:npcs,print.output = FALSE)
 object %<>% RunTSNE(reduction = "pca", dims = 1:npcs)
+object %<>% RunUMAP(reduction = "pca", dims = 1:npcs)
 
-p1 <- TSNEPlot.1(object, group.by="orig.ident",pt.size = 1,label = F,
+p0 <- TSNEPlot.1(object, group.by="orig.ident",pt.size = 1,label = F,
                  no.legend = T,label.size = 4, repel = T, title = "Original")
-#======1.8 RunHarmony=======================
-jpeg(paste0(path,"RunHarmony.jpeg"), units="in", width=10, height=7,res=600)
-system.time(object <- RunHarmony.1(object, group.by.vars= "orig.ident", dims.use = 1:npcs,
-                                  theta = NULL, plot_convergence = TRUE,#epsilon.harmony = -Inf,
-                                  nclust = 100, max.iter.cluster = 100))
+p1 <- UMAPPlot.1(object, group.by="orig.ident",pt.size = 1,label = F,
+                 no.legend = T,label.size = 4, repel = T, title = "Original")
+
+#======1.4 Performing SCTransform and integration =========================
+set.seed(100)
+object_list <- SplitObject(object, split.by = "orig.ident")
+object_list %<>% lapply(SCTransform)
+object.features <- SelectIntegrationFeatures(object_list, nfeatures = 3000)
+options(future.globals.maxSize= object.size(object_list)*1.5)
+object_list <- PrepSCTIntegration(object.list = object_list, anchor.features = object.features, 
+                                  verbose = FALSE)
+anchors <- FindIntegrationAnchors(object_list, normalization.method = "SCT", 
+                                  anchor.features = object.features)
+object <- IntegrateData(anchorset = anchors, normalization.method = "SCT")
+
+remove(object.anchors,object_list);GC()
+object %<>% RunPCA(npcs = 100, verbose = FALSE)
+object <- JackStraw(object, num.replicate = 20,dims = 100)
+object <- ScoreJackStraw(object, dims = 1:100)
+jpeg(paste0(path,"JackStrawPlot_SCT.jpeg"), units="in", width=10, height=7,res=600)
+JackStrawPlot(object, dims = 90:100)
 dev.off()
+npcs = 100
+object %<>% FindNeighbors(reduction = "pca",dims = 1:npcs)
+object %<>% FindClusters(reduction = "pca",resolution = 0.6,
+                         dims.use = 1:npcs,print.output = FALSE)
+object %<>% RunTSNE(reduction = "pca", dims = 1:npcs)
+object %<>% RunUMAP(reduction = "pca", dims = 1:npcs)
 
-object %<>% FindNeighbors(reduction = "harmony",dims = 1:npcs)
-object %<>% FindClusters(reduction = "harmony",resolution = 0.6,
-                       dims.use = 1:npcs,print.output = FALSE)
-
-object[['tsne']] <- list()
-object[['tsne']] = NULL
-object %<>% RunTSNE(reduction = "harmony", dims = 1:npcs)
-tsne.reduction <- CreateDimReducObject(embeddings = object@reductions$tsne@cell.embeddings, 
-                                       key = "tSNE_", assay = "RNA")
-object[['tsne']] =  tsne.reduction
 p2 <- TSNEPlot.1(object, group.by="orig.ident",pt.size = 1,label = F,
-                 label.size = 4, repel = T,title = "Harmonized by Harmony")
+                 label.size = 4, repel = T,title = "Intergrated tSNE plot")
 
-jpeg(paste0(path,"harmony_remove_batch.jpeg"), units="in", width=10, height=7,res=600)
-plot_grid(p1 + NoLegend(),p2 + NoLegend())
+p3 <- UMAPPlot.1(object, group.by="orig.ident",pt.size = 1,label = F,
+                 label.size = 4, repel = T,title = "Intergrated UMAP plot")
+
+#=======1.9 summary =======================================
+jpeg(paste0(path,"S1_TSNEPlot_batch.jpeg"), units="in", width=10, height=7,res=600)
+plot_grid(p0+ggtitle("Clustering without integration")+
+              theme(plot.title = element_text(hjust = 0.5,size = 18)),
+          p2+ggtitle("Clustering with integration")+
+              theme(plot.title = element_text(hjust = 0.5,size = 18)))
 dev.off()
 
-TSNEPlot.1(object = object, label = T, group.by = "ident", 
-         do.return = TRUE, no.legend = T, title = "Tsne plot for all clusters",
-         pt.size = 1,label.size = 6, do.print = T)
+jpeg(paste0(path,"S1_UMAPPlot_batch.jpeg"), units="in", width=10, height=7,res=600)
+plot_grid(p1+ggtitle("Clustering without integration")+
+              theme(plot.title = element_text(hjust = 0.5,size = 18)),
+          p3+ggtitle("Clustering with integration")+
+              theme(plot.title = element_text(hjust = 0.5,size = 18)))
+dev.off()
 
+UMAPPlot.1(object, group.by="integrated_snn_res.0.6",pt.size = 1,label = T,no.legend = T,
+           label.repel = T, alpha = 1,border = T,do.print = T,
+           label.size = 4, repel = T,title = "All cluster in UMAP plot resolution = 0.6")
+
+UMAPPlot.1(object, group.by="integrated_snn_res.0.6",split.by = "conditions",
+           pt.size = 1,label = T,no.legend = T,
+           label.repel = T, alpha = 1,border = T,do.print = T,
+           label.size = 4, repel = T,title = "All cluster in UMAP plot resolution = 0.6")
+
+p3 <- TSNEPlot.1(object, group.by="integrated_snn_res.0.6",pt.size = 1,label = T,no.legend = T,
+                 label.repel = T, alpha = 1,border = T,
+                 label.size = 4, repel = T,title = "Total Clusters",do.print = T)
+p4 <- TSNEPlot.1(object, group.by="integrated_snn_res.0.6",pt.size = 1,label = T,no.legend = T,
+                 label.repel = T, alpha = 1,border = T, split.by = "conditions",
+                 label.size = 4, repel = T,title = NULL, do.print = T)
+
+jpeg(paste0(path,"S1_split_TSNEPlot_all.jpeg"), units="in", width=10, height=7,res=600)
+plot_grid(p3, p4, align = "h")
+dev.off()
 object@assays$RNA@scale.data = matrix(0,0,0)
-save(object, file = "data/Lung_harmony_6_2019728.Rda")
-object_data = object@assays$RNA@data
-save(object_data, file = "data/Lung.data_harmony_6_2019728.Rda")
+object@assays$integrated@scale.data = matrix(0,0,0)
+save(object, file = "data/Lung_6_20190817.Rda")
