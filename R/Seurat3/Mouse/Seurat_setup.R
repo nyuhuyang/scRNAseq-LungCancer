@@ -151,7 +151,7 @@ object_list <- PrepSCTIntegration(object.list = object_list, anchor.features = o
                                   verbose = FALSE)
 anchors <- FindIntegrationAnchors(object_list, normalization.method = "SCT", 
                                   anchor.features = object.features)
-object <- IntegrateData(anchorset = anchors, normalization.method = "SCT")
+object1 <- IntegrateData(anchorset = anchors, normalization.method = "SCT")
 
 remove(object.anchors,object_list);GC()
 object %<>% RunPCA(npcs = 100, verbose = FALSE)
@@ -210,3 +210,6 @@ dev.off()
 object@assays$RNA@scale.data = matrix(0,0,0)
 object@assays$integrated@scale.data = matrix(0,0,0)
 save(object, file = "data/Lung_6_20190817.Rda")
+
+object_data = object@assays$SCT@data
+save(object_data, file = "data/object.data_Lung_6_20190817.Rda")

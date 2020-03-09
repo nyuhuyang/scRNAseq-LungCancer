@@ -11,22 +11,26 @@ if(!dir.exists(path))dir.create(path, recursive = T)
 marker_path <- paste0(path,"markers/")
 if(!dir.exists(marker_path))dir.create(marker_path, recursive = T)
 #====== 2.1 Identify cell types ==========================================
-(load(file="data/Lung_harmony_6_2019728.Rda"))
+(load(file="data/Lung_6_20190817.Rda"))
+DefaultAssay(object) = "RNA"
 
-df_markers <- readxl::read_excel("../seurat_resources/bio-rad-markers.xlsx")
+df_markers <- readxl::read_excel("../seurat_resources/bio-rad-markers.xlsx",sheet = "Human.sub")
 colnames(df_markers) = gsub(" ","_",colnames(df_markers))
 colnames(df_markers) = gsub(":|\\/","_",colnames(df_markers))
 colnames(df_markers) = gsub("\\+","",colnames(df_markers))
 df_markers = df_markers[,grep("Alias",colnames(df_markers),invert = T)]
 marker.list <- df2list(df_markers)
 
-marker.list %<>% lapply(function(x) x) %>% 
-     lapply(function(x) FilterGenes(object,x)) %>% 
-     lapply(function(x) x[!is.na(x)])
+marker.list %<>% lapply(function(x) x[1:18]) %>% 
+    lapply(function(x) FilterGenes(object,x)) %>% 
+    lapply(function(x) x[!is.na(x)]) %>% 
+    lapply(function(x) x[1:min(length(x),12)])
+marker.list <- marker.list[!is.na(marker.list)]
+marker.list %>% list2df %>% t %>% kable() %>% kable_styling()
 
 marker.list <- marker.list[sapply(marker.list,length)>0]
 marker.list %>% list2df %>% t %>% kable() %>% kable_styling()
-Idents(object) <- "RNA_snn_res.0.6"
+Idents(object) <- "integrated_snn_res.0.6"
 
 for(i in 1:length(marker.list)){
     p <- lapply(marker.list[[i]], function(marker) {
