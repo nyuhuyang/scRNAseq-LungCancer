@@ -21,7 +21,7 @@ if(!dir.exists(path))dir.create(path, recursive = T)
 
 # 3.1.1 load data
 # Rename ident
-(load(file = "data/Lung_6_20190817.Rda"))
+(load(file = "data/Lung_5_CCA_20200313.Rda"))
 Idents(object) <-"singler1sub"
 object <- sortIdent(object)
 DefaultAssay(object) = "RNA"

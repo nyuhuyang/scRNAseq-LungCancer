@@ -158,10 +158,14 @@ p3 <- TSNEPlot.1(object, group.by="orig.ident",pt.size = 1,label = F,legend.size
 p4 <- UMAPPlot.1(object, group.by="orig.ident",pt.size = 1,label = F,legend.size = 15,
                  do.print = T,
                  label.size = 4, repel = T,title = "Harmony intergrated UMAP plot")
+
+TSNEPlot.1(object, group.by="integrated_snn_res.0.6",pt.size = 1,label = T,legend.size = 15,
+           do.print = T, label.repel = T,no.legend = T,
+           label.size = 4, repel = T,title = "Clustering at resolution = 0.6")
 # =====
 
 object@assays$integrated@scale.data = matrix(0,0,0)
-save(object, file = "data/Lung_5_Harmony_20200313.Rda")
+save(object, file = "data/Lung_5_CCA_20200313.Rda")
 
 object_data <- object@assays$SCT@data
 save(object_data, file = "data/Lung.data_5_20200313.Rda")
