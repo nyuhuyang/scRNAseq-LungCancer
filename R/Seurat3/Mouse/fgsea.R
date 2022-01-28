@@ -14,7 +14,7 @@ library(fgsea)
 library(tibble)
 library(ggpubr)
 library(ggsci)
-source("../R/Seurat3_functions.R")
+source("https://raw.githubusercontent.com/nyuhuyang/SeuratExtra/master/R/Seurat3_functions.R")
 path <- paste0("output/",gsub("-","",Sys.Date()),"/")
 if(!dir.exists(path)) dir.create(path, recursive = T)
 # 3.1.1 load data

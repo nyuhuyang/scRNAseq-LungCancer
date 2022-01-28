@@ -4,11 +4,11 @@ library(reshape2)
 library(pheatmap)
 library(kableExtra)
 library(dplyr)
-source("../R/Seurat3_functions.R")
+source("https://raw.githubusercontent.com/nyuhuyang/SeuratExtra/master/R/Seurat3_functions.R")
 path <- paste0("output/",gsub("-","",Sys.Date()),"/")
 if(!dir.exists(path)) dir.create(path, recursive = T)
 #====== 3.1 Create Singler Object  ==========================================
-(load(file = "data/Lung_5_CCA_20200313.Rda"))
+(load(file = "data/Lung_5_20200313.Rda"))
 (load(file = "output/singler_T_Lung_5_20200313.Rda"))
 # if singler didn't find all cell labels`
 length(singler$singler[[1]]$SingleR.single$labels) == ncol(object@assays$RNA@data)
@@ -78,15 +78,13 @@ Idents(object) = "singler1sub"
 object %<>% sortIdent()
 object <- AddMetaColor(object = object, label= "singler1sub", 
                        colors = Singler.colors[1:l])
-lapply(c(UMAPPlot.1, TSNEPlot.1), function(fun) {
-    fun(object, cols = ExtractMetaColor(object),
-         label = T,pt.size = 1,no.legend = T,label.repel = T,
-         label.size = 4, repel = T,do.return= T,do.print = T,alpha = 0.9,
-         title = "All cell types identified by Mouse RNA-seq reference database")
-})
+TSNEPlot.1(object, cols = Singler.colors,
+       label = T,pt.size = 1,no.legend = T,label.repel = T,
+       label.size = 4, repel = T,do.return= T,do.print = T,alpha = 0.9,
+       title = "All cell types identified by Mouse RNA-seq reference database")
 
 
-save(object,file="data/Lung_5_CCA_20200313.Rda")
+save(object,file="data/Lung_5_20200313.Rda")
 
 ##############################
 # draw tsne plot
