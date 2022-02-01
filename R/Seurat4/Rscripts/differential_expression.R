@@ -49,8 +49,7 @@ if(step == "cell_types"){# 32~64GB
                               assay = "SCT",
                               logfc.threshold = 0.1,
                              only.pos = F,
-                             test.use = "MAST",
-                             latent.vars = "nFeature_SCT")
+                             test.use = "wilcox")
     markers$cluster = as.character(opt$type)
     markers$Cell_category = opt$ident
     num = opt$num
